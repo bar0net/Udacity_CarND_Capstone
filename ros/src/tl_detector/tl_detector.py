@@ -100,8 +100,34 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        #TODO implement
-        return 0
+        if len(self.waypoints) = 0:
+            return -1
+
+        min_dst = float("inf")
+        index = -1
+
+        for i, wp in enumerate(self.waypoints):
+            dst = self.module(pose.position, wp.pose.pose.position)
+
+            if dst < min_dst:
+                min_dst = dst
+                index = i
+
+        # If the waypoint is behind the car, get the next one
+        wp = self.waypoints[index]
+        angle = self.car.yaw - math.atan2(wp.pose.pose.position.y - self.car.position.y, wp.pose.pose.position.x - self.car.position.x)
+
+        if abs(angle) > math.pi / 4:
+            index = (index + 1) % len(self.waypoints)
+            wp = self.waypoints[index]
+
+        return index
+
+    def module(self, pos1, pos2):
+        return math.sqrt( (pos1.x - pos2.x)*(pos1.x - pos2.x) + (pos1.y - pos2.y)*(pos1.y - pos2.y))
+
+    def distance(self, x1, y1, x2, y2):
+        return math.sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2))
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light
@@ -139,6 +165,27 @@ class TLDetector(object):
             car_position = self.get_closest_waypoint(self.pose.pose)
 
         #TODO find the closest visible traffic light (if one exists)
+        stop_lines = self.config['stop_line_positions']
+
+        min_dst = float("inf")
+        index = -1
+
+        if self.lights:
+            for i in range(stop_lines):
+                dst = self.distance(stop_lines[i][0], stop_lines[i][1], \
+                                    self.pose.pose.position.x, self.pose.pose.position.y)
+
+                if dst < min_dst:
+                    index = i
+                    min_dst = dst
+
+            stop_light = Pose()
+            stop_light.position.x = stop_lines[index][0]
+            stop_light.position.y = stop_lines[index][1]
+            stop_light.position.z = 0
+
+            light_wp = self.get_closest_waypoint(stop_light)
+            light = self.lights[index]
 
         if light:
             state = self.get_light_state(light)
