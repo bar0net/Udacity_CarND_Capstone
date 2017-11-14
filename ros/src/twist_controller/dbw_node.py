@@ -66,11 +66,11 @@ class DBWNode(object):
         self.loop()
 
     def twist_cb(self, msg):
-        self.target_v = self.module(msg.twist.linear.x,msg.twist.linear.y)
+        self.target_v = msg.twist.linear.x
         self.target_yaw = msg.twist.angular.z
 
     def velocity_cb(self, msg):
-        self.current_v = self.module(msg.twist.linear.x,msg.twist.linear.y)
+        self.current_v = msg.twist.linear.x
     
     def dwb_enabled_cb(self, msg):
         if msg != None:
@@ -84,10 +84,8 @@ class DBWNode(object):
 
             accel, brake, steer = self.controller.control(self.target_v, self.target_yaw, \
                                                             self.current_v, self.dbw_enabled)
-            # rospy.logwarn("[dbw_node::loop] {}, {}, {}".format(accel, brake, steer))
 
             if self.dbw_enabled:
-                # rospy.logwarn("<{} {} {}>".format(accel, brake, steer))
                 self.publish(accel, brake, steer)
             rate.sleep()
 

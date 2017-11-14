@@ -19,7 +19,7 @@ MIN_LIGHT_DISTANCE = 100
 import glob
 import os
 import random
-GET_IMAGES = True
+GET_IMAGES = False
 RED_FOLDER = os.getcwd() + '/images/red/'
 YELLOW_FOLDER = os.getcwd() + '/images/yellow/'
 GREEN_FOLDER = os.getcwd() + '/images/green/'
@@ -123,7 +123,7 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        if len(self.waypoints) == 0:
+        if self.waypoints is None or len(self.waypoints) == 0:
             return -1
 
         min_dst = float("inf")
@@ -234,7 +234,7 @@ class TLDetector(object):
         # else return unknown state
         if light:
             state = self.get_light_state(light)
-            rospy.logwarn("[tl_detector::image_cb] Light<{}>: {} - {}".format(index, str(state), light.state))
+            #rospy.logwarn("[tl_detector::image_cb] Light<{}>: {} - {}".format(index, str(state), light.state))
             #return light_wp, state
             return light_wp, light.state
 

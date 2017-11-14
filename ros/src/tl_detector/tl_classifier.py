@@ -24,8 +24,8 @@ beta_2 = 0.999
 epsilon = 1e-08
 decay = 0.0
 
-epochs = 100
-batch_size = 16
+epochs = 30
+batch_size = 32
 WINDOWS_PER_IMG = 1036
 
 def GetFiles():

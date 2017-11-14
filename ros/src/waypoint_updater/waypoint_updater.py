@@ -29,6 +29,7 @@ LOOKAHEAD_WPS = 30
 
 # Distance in [m] before a "Stopping Signal" to start car deceleration
 STOP_DISTANCE = 3.0
+START_BRAKING = 50.0
 
 class VehicleData():
     def __init__(self):
@@ -54,9 +55,11 @@ class WaypointUpdater(object):
         self.waypoints = []
         self.next_wp_id = None
 
-        self.target_speed = 10.0 # rospy.get_param('~/waypoint_loader/velocity', 64.0)
+        self.target_speed = 10 # rospy.get_param('~/waypoint_loader/velocity', 64.0)
         self.brake_limit = rospy.get_param('~/twist_controller/decel_limit', -5)
         self.accel_limit = rospy.get_param('~/twist_controller/accel_limit', 1)
+
+        self.traffic_wp = -1
         
         rate = rospy.Rate(10)
         while not rospy.is_shutdown():
@@ -65,7 +68,7 @@ class WaypointUpdater(object):
 
     def loop(self):
         # Sanity check
-        if self.lack_information():
+        if self.insuficient_information():
             return
 
         # Get the index of the next waypoint in front of the car
@@ -83,15 +86,12 @@ class WaypointUpdater(object):
         self.car.yaw = self.get_yaw(msg.pose.orientation)
 
     def waypoints_cb(self, msg):
+        # Define track waypoints
         self.waypoints = msg.waypoints
 
     def traffic_cb(self, msg):
-        # TODO: Callback for /traffic_waypoint message. Implement
-        # rospy.logwarn('[Traffic_cb::msg] {}'.format(msg.data))
-        if msg.data == -1:
-            self.target_speed = 10.0
-        else:
-            self.target_speed = 0.44
+        # Update next trafic light state
+        self.traffic_wp = msg.data
 
     def velocity_cb(self, msg):
         #self.car.velocity = self.get_velocity(msg.twist.linear.x, msg.twist.linear.y)
@@ -126,43 +126,45 @@ class WaypointUpdater(object):
         return math.sqrt(x*x + y*y)
 
     # Check if the expected information is recieved
-    def lack_information(self):
+    def insuficient_information(self):
         output = False
         if self.car.position == None:
-            rospy.loginfo("[waypoint_updater::lack_information] No position recieved")
+            rospy.loginfo("[waypoint_updater::insuficient_information] No position recieved")
             output = True
         
         if len(self.waypoints) == 0:
-            rospy.loginfo("[waypoint_updater::lack_information] No waypoints recieved")
+            rospy.loginfo("[waypoint_updater::insuficient_information] No waypoints recieved")
             output = True
         
         if self.car.velocity == None:
-            rospy.loginfo("[waypoint_updater::lack_information] No velocity recieved")
+            rospy.loginfo("[waypoint_updater::insuficient_information] No velocity recieved")
             output = True
-
-        # Todo: Register Warning when no traffic_waypoints recieved
 
         return output
 
-    # Get the next waypoint in front of the car
-    def get_next_waypoint_index(self):
-        
-        # get closest waypoint to the car
+    # Get the index of the closest waypoint to a position
+    def get_closest_waypoint(self,position):
         min_dst = float("inf")
         index = -1
 
         for i, wp in enumerate(self.waypoints):
-            dst = self.module(self.car.position,wp.pose.pose.position)
+            dst = self.module(position,wp.pose.pose.position)
 
             if dst < min_dst:
                 min_dst = dst
-                index = i
+                index = i       
+        return index
 
-        # If the waypoint is behind the car, get the next one
-        wp = self.waypoints[index]
+    # Determine if a waypoint is behind a particular position
+    def is_behind_the_car(self, wp):
         angle = self.car.yaw - math.atan2(wp.pose.pose.position.y - self.car.position.y, wp.pose.pose.position.x - self.car.position.x)
+        return abs(angle) > math.pi / 4
 
-        if abs(angle) > math.pi / 4:
+    # Get the next waypoint in front of the car
+    def get_next_waypoint_index(self):
+        index = self.get_closest_waypoint(self.car.position)
+
+        if self.is_behind_the_car(self.waypoints[index]):
             index = (index + 1) % len(self.waypoints)
             wp = self.waypoints[index]
 
@@ -170,16 +172,62 @@ class WaypointUpdater(object):
 
     def generate_waypoints(self, start_id):
         final_waypoints = []
+        
+        """
         for i in range(LOOKAHEAD_WPS):
             curr_id = (start_id + i) % len(self.waypoints)
             
+            stop_dst = float("inf")
+            if self.traffic_wp >= 0:
+                stop_dst = self.distance(self.waypoints, curr_id, self.traffic_wp)
+
             dst = self.distance(self.waypoints, start_id, curr_id)
             vel = math.sqrt(self.car.velocity * self.car.velocity + 2 * self.accel_limit * dst)
-            if vel > self.target_speed:
+
+            # if i<5:
+            #     rospy.logwarn("{}: {} ||||| {}".format(i, vel, stop_dst))
+
+            if stop_dst <= START_BRAKING:
+                ref = self.target_speed * (stop_dst - STOP_DISTANCE) / (START_BRAKING - STOP_DISTANCE)
+                if vel > ref:
+                    vel = max(0.0, ref)
+            else:
+                # if vel > self.target_speed:
+                #     vel = self.target_speed
                 vel = self.target_speed
 
-            self.waypoints[curr_id].twist.twist.linear.x = self.target_speed
+            # if i<5:
+            #     rospy.logwarn("{}: {} ||||| {}".format(i, vel, stop_dst))
+            
+            self.waypoints[curr_id].twist.twist.linear.x = vel
             final_waypoints.append(self.waypoints[curr_id])
+        """
+        for i in range(LOOKAHEAD_WPS):
+            index = (start_id + i) % len(self.waypoints)
+            dst_to_light = float("inf")
+
+            # Update distance to next traffic light:
+            # when next traffic light is in red and the current index comes before that
+            # traffic light index
+            if self.traffic_wp >= 0 and index <= self.traffic_wp:
+                dst_to_light = self.module(self.waypoints[index].pose.pose.position, self.waypoints[self.traffic_wp].pose.pose.position)
+
+            # Update velocity:
+            # Before the start braking point -> target speed
+            # Between start and end braking points -> linearly decreasing speeds
+            # Between end braking point and traffic light -> 0.0
+            vel = 0.0
+            if dst_to_light >= START_BRAKING:
+                vel = self.target_speed
+            elif dst_to_light < START_BRAKING and dst_to_light >= STOP_DISTANCE:
+                vel = self.target_speed * (dst_to_light - STOP_DISTANCE)/(START_BRAKING - STOP_DISTANCE)
+            elif dst_to_light < STOP_DISTANCE:
+                vel = 0.0
+
+            # rospy.logwarn("{}: {}".format(i, vel))            
+            self.waypoints[index].twist.twist.linear.x = vel
+            final_waypoints.append(self.waypoints[index])
+
         return final_waypoints
 
     def publish(self, final_waypoints):
