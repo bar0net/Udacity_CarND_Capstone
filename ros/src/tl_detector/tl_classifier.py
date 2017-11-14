@@ -24,7 +24,7 @@ beta_2 = 0.999
 epsilon = 1e-08
 decay = 0.0
 
-epochs = 3
+epochs = 100
 batch_size = 16
 WINDOWS_PER_IMG = 1036
 
