@@ -1,3 +1,29 @@
+# Udacity Self-Driving Car Nanodegree Capstone Project
+
+WORK IN PROGRESS
+
+## Introduction
+The objective of this project is to implement the core set of functionalities that would allow an autonomous vehicle drive arround a track with obstacles. These include a path planning system, a control system to manage the signals sent to the actuators on the car and a detection and classification system to identify obstacles (in this case traffic light status).
+
+## Implemented by:
+#### Jordi Tudela Alcacer
+
+## Notes:
+* [waypoint_updater::__init__] revert preset testing self.target_speed
+* [tl_detector::process_traffic_light] return the state from our classifier instead of light.state (currently useful to work on kinematic contol)
+
+## Systems
+### Waypoint Updater
+TODO: write description
+
+### Twist Control
+TODO: write description
+
+### Traffic Light Detector & Classifier
+TODO: write description
+
+------------
+
 This is the project repo for the final project of the Udacity Self-Driving Car Nanodegree: Programming a Real Self-Driving Car. For more information about the project, see the project introduction [here](https://classroom.udacity.com/nanodegrees/nd013/parts/6047fe34-d93c-4f50-8336-b70ef10cb4b2/modules/e1a23b06-329a-4684-a717-ad476f0d8dff/lessons/462c933d-9f24-42d3-8bdc-a08a5fc866e4/concepts/5ab4b122-83e6-436d-850f-9f4d26627fd9).
 
 ### Native Installation
@@ -13,7 +39,7 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
 * Follow these instructions to install ROS
   * [ROS Kinetic](http://wiki.ros.org/kinetic/Installation/Ubuntu) if you have Ubuntu 16.04.
   * [ROS Indigo](http://wiki.ros.org/indigo/Installation/Ubuntu) if you have Ubuntu 14.04.
-* [Dataspeed DBW](https://bitbucket.org/DataspeedInc/dbw_mkz_ros)
+  * [Dataspeed DBW](https://bitbucket.org/DataspeedInc/dbw_mkz_ros)
   * Use this option to install the SDK on a workstation that already has ROS installed: [One Line SDK Install (binary)](https://bitbucket.org/DataspeedInc/dbw_mkz_ros/src/81e63fcc335d7b64139d7482017d6a97b405e250/ROS_SETUP.md?fileviewer=file-view-default)
 * Download the [Udacity Simulator](https://github.com/udacity/CarND-Capstone/releases/tag/v1.2).
 
