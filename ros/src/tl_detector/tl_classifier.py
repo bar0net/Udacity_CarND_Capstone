@@ -266,7 +266,7 @@ def Binarize(X):
     return X
 
 def Main():
-    X_train, y_train, m_train, X_test, y_test, m_test = GetFiles()
+    X_train, y_train, X_test, y_test = GetFiles()
     model = Classifier2() 
 
     steps = int(X_train.size / batch_size)
