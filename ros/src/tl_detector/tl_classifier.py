@@ -269,6 +269,8 @@ def Main():
     X_train, y_train, X_test, y_test = GetFiles()
     model = Classifier2() 
 
+    print("[Data] Train: {}, Test: {}".format(X_train.size,X_test.size))
+
     steps = int(X_train.size / batch_size)
     model.fit_generator(GenClassify(X_train, y_train, batch_size), steps_per_epoch = steps, epochs = epochs, verbose = 1)
 
