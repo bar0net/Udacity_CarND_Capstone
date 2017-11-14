@@ -38,8 +38,6 @@ class VehicleData():
 
 class WaypointUpdater(object):
     def __init__(self):
-        rospy.logwarn('[waypoint_updater::__init__]')
-
         rospy.init_node('waypoint_updater')
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
@@ -56,11 +54,11 @@ class WaypointUpdater(object):
         self.waypoints = []
         self.next_wp_id = None
 
-        self.target_speed = rospy.get_param('~/waypoint_loader/velocity', 64.0)
+        self.target_speed = 10.0 # rospy.get_param('~/waypoint_loader/velocity', 64.0)
         self.brake_limit = rospy.get_param('~/twist_controller/decel_limit', -5)
         self.accel_limit = rospy.get_param('~/twist_controller/accel_limit', 1)
         
-        rate = rospy.Rate(5)
+        rate = rospy.Rate(10)
         while not rospy.is_shutdown():
             self.loop()
             rate.sleep()
@@ -89,7 +87,11 @@ class WaypointUpdater(object):
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
-        rospy.loginfo('Traffic_cb::msg = {}'.format(msg))
+        # rospy.logwarn('[Traffic_cb::msg] {}'.format(msg.data))
+        if msg.data == -1:
+            self.target_speed = 10.0
+        else:
+            self.target_speed = 0.44
 
     def velocity_cb(self, msg):
         #self.car.velocity = self.get_velocity(msg.twist.linear.x, msg.twist.linear.y)
@@ -174,7 +176,7 @@ class WaypointUpdater(object):
             dst = self.distance(self.waypoints, start_id, curr_id)
             vel = math.sqrt(self.car.velocity * self.car.velocity + 2 * self.accel_limit * dst)
             if vel > self.target_speed:
-                vel = target_speed
+                vel = self.target_speed
 
             self.waypoints[curr_id].twist.twist.linear.x = self.target_speed
             final_waypoints.append(self.waypoints[curr_id])

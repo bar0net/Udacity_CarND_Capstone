@@ -39,7 +39,7 @@ class Controller(object):
         accel = self.velocity_PID.step(target_v - current_v, delta_t)
 
         throttle = max(0.0, accel)
-        brake = min(0.0, accel)
+        brake = max(0.0, -accel)
 
         steer = self.steer_control.get_steering(target_v, target_yaw, current_v)
         steer = self.LPF.filt(steer)

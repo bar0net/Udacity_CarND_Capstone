@@ -87,6 +87,7 @@ class DBWNode(object):
             # rospy.logwarn("[dbw_node::loop] {}, {}, {}".format(accel, brake, steer))
 
             if self.dbw_enabled:
+                # rospy.logwarn("<{} {} {}>".format(accel, brake, steer))
                 self.publish(accel, brake, steer)
             rate.sleep()
 
