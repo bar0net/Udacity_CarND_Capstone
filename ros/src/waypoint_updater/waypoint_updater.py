@@ -50,17 +50,16 @@ class WaypointUpdater(object):
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
-        # TODO: Add other member variables you need below
+        # Define class parameters
         self.car = VehicleData()
         self.waypoints = []
         self.next_wp_id = None
-
         self.target_speed = 10 # rospy.get_param('~/waypoint_loader/velocity', 64.0)
         self.brake_limit = rospy.get_param('~/twist_controller/decel_limit', -5)
         self.accel_limit = rospy.get_param('~/twist_controller/accel_limit', 1)
-
         self.traffic_wp = -1
         
+        # Main Loop
         rate = rospy.Rate(10)
         while not rospy.is_shutdown():
             self.loop()
@@ -80,33 +79,40 @@ class WaypointUpdater(object):
         # publish the list of next waypoints
         self.publish(final_waypoints)   
 
+    # Update Car position and Orientation when we get
+    # a "/current_pose" update
     def pose_cb(self, msg):
-        # Update Car position and Orientation
         self.car.position = msg.pose.position
         self.car.yaw = self.get_yaw(msg.pose.orientation)
 
+    # Define track waypoints
     def waypoints_cb(self, msg):
-        # Define track waypoints
         self.waypoints = msg.waypoints
-
+    
+    # Update next trafic light state when we get a
+    # "/traffic_waypoint" update
     def traffic_cb(self, msg):
-        # Update next trafic light state
         self.traffic_wp = msg.data
 
+    # Update car velocity parameter
     def velocity_cb(self, msg):
         #self.car.velocity = self.get_velocity(msg.twist.linear.x, msg.twist.linear.y)
         self.car.velocity = msg.twist.linear.x
-
+    
+    # TODO: Callback for /obstacle_waypoint message. We will implement it later
     def obstacle_cb(self, msg):
-        # TODO: Callback for /obstacle_waypoint message. We will implement it later
         pass
 
+    # Return the assigned velocity of a waypoint
     def get_waypoint_velocity(self, waypoint):
         return waypoint.twist.twist.linear.x
 
+    # Set the assigned velocity for a particular waypoint
     def set_waypoint_velocity(self, waypoints, waypoint, velocity):
         waypoints[waypoint].twist.twist.linear.x = velocity
 
+    # Compute the distance between waypoints: from wp1 to wp2
+    # Note: if wp2 < wp1, returns 0
     def distance(self, waypoints, wp1, wp2):
         dist = 0
         dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
@@ -115,13 +121,16 @@ class WaypointUpdater(object):
             wp1 = i
         return dist
 
+    # Returns the 2D distance between pos1 and pos2
     def module(self, pos1, pos2):
         return math.sqrt( (pos1.x - pos2.x)*(pos1.x - pos2.x) + (pos1.y - pos2.y)*(pos1.y - pos2.y))
 
+    # Returns the yaw angle value from a orientation quaternion
     def get_yaw(self,orientation):
         angles = tf.transformations.euler_from_quaternion((orientation.x, orientation.y, orientation.z, orientation.w))
         return angles[2]
 
+    # Returns the module of the vector defined by (x,y)
     def get_velocity(self, x, y):
         return math.sqrt(x*x + y*y)
 
@@ -170,38 +179,10 @@ class WaypointUpdater(object):
 
         return index
 
+    # Generate the list of waypoints with its assigned velocity to publish
     def generate_waypoints(self, start_id):
         final_waypoints = []
-        
-        """
-        for i in range(LOOKAHEAD_WPS):
-            curr_id = (start_id + i) % len(self.waypoints)
-            
-            stop_dst = float("inf")
-            if self.traffic_wp >= 0:
-                stop_dst = self.distance(self.waypoints, curr_id, self.traffic_wp)
 
-            dst = self.distance(self.waypoints, start_id, curr_id)
-            vel = math.sqrt(self.car.velocity * self.car.velocity + 2 * self.accel_limit * dst)
-
-            # if i<5:
-            #     rospy.logwarn("{}: {} ||||| {}".format(i, vel, stop_dst))
-
-            if stop_dst <= START_BRAKING:
-                ref = self.target_speed * (stop_dst - STOP_DISTANCE) / (START_BRAKING - STOP_DISTANCE)
-                if vel > ref:
-                    vel = max(0.0, ref)
-            else:
-                # if vel > self.target_speed:
-                #     vel = self.target_speed
-                vel = self.target_speed
-
-            # if i<5:
-            #     rospy.logwarn("{}: {} ||||| {}".format(i, vel, stop_dst))
-            
-            self.waypoints[curr_id].twist.twist.linear.x = vel
-            final_waypoints.append(self.waypoints[curr_id])
-        """
         for i in range(LOOKAHEAD_WPS):
             index = (start_id + i) % len(self.waypoints)
             dst_to_light = float("inf")
@@ -230,6 +211,7 @@ class WaypointUpdater(object):
 
         return final_waypoints
 
+    # Publish the list of waypoints
     def publish(self, final_waypoints):
         out_msg = Lane()
         out_msg.header.frame_id = '/World'
