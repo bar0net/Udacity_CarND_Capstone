@@ -47,21 +47,19 @@ class WaypointUpdater(object):
         rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_cb)
 
         # TODO: Add a subscriber for /obstacle_waypoint below (pending clarification)
-
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # Define class parameters
         self.car = VehicleData()
         self.waypoints = []
         self.next_wp_id = None
-        # Using /waypoint_loader/velocity causes strange behaviours in local testing
-        # (Insufficient computing power, maybe?)
-        #self.target_speed = rospy.get_param('~/waypoint_loader/velocity', 64.0)
-        self.target_speed = 10 
+
+        self.target_speed = rospy.get_param('~/waypoint_loader/velocity', 64.0) / 3.6 # convert: km/h to m/s
         self.brake_limit = rospy.get_param('~/twist_controller/decel_limit', -5)
         self.accel_limit = rospy.get_param('~/twist_controller/accel_limit', 1)
         self.traffic_wp = -1
         
+
         # Main Loop
         rate = rospy.Rate(10)
         while not rospy.is_shutdown():
