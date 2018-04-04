@@ -1,26 +1,25 @@
 # Udacity Self-Driving Car Nanodegree Capstone Project
 
-WORK IN PROGRESS
-
 ## Introduction
 The objective of this project is to implement the core set of functionalities that would allow an autonomous vehicle drive arround a track with obstacles. These include a path planning system, a control system to manage the signals sent to the actuators on the car and a detection and classification system to identify obstacles (in this case traffic light status).
 
 ## Implemented by:
 #### Jordi Tudela Alcacer
-
-## Notes:
-* [waypoint_updater::__init__] revert preset testing self.target_speed
-* [tl_detector::process_traffic_light] return the state from our classifier instead of light.state (currently useful to work on kinematic contol)
+- jordi.tudela.alcacer@gmail.com
 
 ## Systems
 ### Waypoint Updater
-TODO: write description
+The Waypoint updater checks what are the desired speeds and the positions for the next positions the car should reach. If the car is about to reach a traffic light, it checks if it must stop and when the car gets within a reasonable distance from the crossroad, it applies a linear deceleration.
 
 ### Twist Control
-TODO: write description
+Implemented a PID control to try to smooth the changes of velocity and direction. Implemented a reset policy for the filter to avoid undesired unstable behaviours of the error's value.
 
 ### Traffic Light Detector & Classifier
-TODO: write description
+For the task of detecting and classifying the state of traffic lights, I have implemented a fast-rcnn network with (a reduced) 50 regions and also limiting the output to 4 classes (Green, Yellow, Red, Off). I started with a pretrained model from the [Tensorflow detection model zoo](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md) trained on the COCO dataset.
+
+To train the model, I initially chose the [Bosch Small Traffic Lights Dataset](https://hci.iwr.uni-heidelberg.de/node/6132) because it is an accessible, reasonably extensive dataset but, not having access to a cuda capable computer and having to train it using Google ML-engine, it seemed apparent that this was not the most resource-efficient strategy. In the end, I opted to train the model with a mixture of images both from the real world and also taken from the simulator.
+
+
 
 ------------
 
