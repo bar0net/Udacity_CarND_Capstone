@@ -5,7 +5,6 @@ The objective of this project is to implement the core set of functionalities th
 
 ## Implemented by:
 #### Jordi Tudela Alcacer
-- jordi.tudela.alcacer@gmail.com
 
 ## Systems
 ### Waypoint Updater
